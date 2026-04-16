@@ -1,0 +1,17 @@
+# Core environment for the recommended CDS521 transfer learning experiment
+python>=3.10
+numpy>=1.26
+pandas>=2.2
+matplotlib>=3.8
+Pillow>=10.0
+tqdm>=4.66
+scikit-learn>=1.4
+
+torch>=2.2
+torchvision>=0.17
+
+# Optional but recommended if you want to try ViT or timm backbones
+timm>=1.0
+
+# Optional utilities
+opencv-python>=4.9
