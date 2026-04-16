@@ -1,0 +1,20 @@
+{
+  "seed": 42,
+  "batch_size": 16,
+  "epochs": 10,
+  "patience": 3,
+  "data_classes": [
+    "airplane",
+    "automobile",
+    "bird",
+    "cat",
+    "dog"
+  ],
+  "generated_at": "2026-04-17T03:20:46.266882",
+  "regimes": [
+    "scratch",
+    "feature_extraction",
+    "partial_finetune",
+    "full_finetune"
+  ]
+}

@@ -1,0 +1,349 @@
+             CDS521 迁移学习实验文档与填写说明
+                    （配套主论文中的实验占位区使用）
+
+
+                        为你的最终提交稿配套准备
+
+
+
+这份文档是做什么的：主论文已经写好理论与方法综述，但为了拿更高分，建议你补一个本地可复
+现的小实验。这份指南告诉你：做什么实验最稳、怎么跑、要记录哪些结果、主论文里哪些占位区
+需要替换、以及怎样把结果写得像“高分论文”而不是“作业截图”。
+
+
+1. 推荐你做的实验方案（最稳、最容易拿分）
+
+  推荐主线：用 ImageNet 预训练的 ResNet-18（或 ResNet-50）在一个小目标数据集上比较 4
+种训练策略：
+
+• A. From Scratch：随机初始化，从头训练。
+
+• B. Feature Extraction：冻结 backbone，只训练最后的分类头。
+
+• C. Partial Fine-tuning：解冻最后一个 stage（如 ResNet 的 layer4）和分类头。
+
+• D. Full Fine-tuning：全模型微调。
+
+  为什么这个方案最好：
+
+• 和课程题目要求完全对齐：能明确展示 pre-training、feature extraction、fine-tuning 的差
+  异。
+
+• 实现成本低，几乎所有本地机器都能做；没有 GPU 也能跑，只是慢一些。
+
+• 很容易写出“分析”，不只是贴一个准确率。
+
+• 你可以自然讨论 训练时间、参数更新规模、数据效率、性能差异，这些都是高分点。
+
+  不建议你一开始就做的版本：
+
+• 直接上很大的 ViT 或 LLM：配置压力大，容易翻车。
+
+• 一上来做 LoRA/Prompt Tuning：可以作为加分扩展，但不建议作为唯一实验。
+
+• 数据集太大：会导致你时间都花在跑实验，不利于按时交作业。
+
+
+
+
+                                  1
+2. 数据集怎么选
+
+2.1 最推荐的数据集选择
+
+   方案 1（最稳）
+          ：CIFAR-10 的 4–5 个类别子集。例如：cat, dog, bird, automobile, airplane。
+理由是：
+
+• 小而标准，容易获取，结果好解释。
+
+• 用 ImageNet 预训练权重来迁移很自然。
+
+• 类别之间既有容易区分的，也有容易混淆的，方便写 error analysis。
+
+   方案 2（更有个性）
+            ：你自己的小型图片数据集。例如 3–5 类，每类 100–300 张图。优点是更像真
+实应用；缺点是要自己清洗数据、命名和划分训练/验证/测试集。
+
+
+2.2 推荐数据划分
+
+• Train / Validation / Test = 70% / 15% / 15%
+
+• 每一类尽量保持数量接近
+
+• 如果总量很小，可以固定随机种子并重复 3 次实验取平均
+
+
+
+3. 模型、训练设置与对比表
+
+3.1 统一设置（保证实验公平）
+
+   为了让你的比较有说服力，以下项目应尽量保持一致：
+
+• 输入尺寸：224 × 224
+
+• 数据增强（训练集）：Resize、RandomHorizontalFlip、轻量 RandomCrop / ColorJitter
+
+• 验证/测试：只做 Resize + Normalize
+
+• 优化器：AdamW 或 SGD（二选一即可，不要混着比较）
+
+• 批大小：16 / 32
+
+• 训练轮数：10–20 epochs（小作业完全够用）
+
+• 早停：验证集 3–5 个 epoch 不提升则停止
+
+• 随机种子：固定，例如 42
+
+
+
+
+                                            2
+3.2 推荐超参数起点
+
+设置                    可训练部分               学习率起点         说明
+
+From Scratch          全部参数                1e-3 或 3e-4   作为对照组，通常最慢、最吃数据
+Feature Extraction    仅分类头                1e-3          最稳定，最容易在小数据下快速收
+                                                        敛
+Partial Fine-tuning   layer4 + fc         1e-4          推荐的“中间路线”
+                                                                ，通常很好写分
+                                                        析
+Full Fine-tuning      全部参数                1e-5 到 5e-5   数据少时可能过拟合，但理论上上
+                                                        限更高
+
+
+
+3.3 你最终至少要拿到的结果
+
+• 4 个设置的最佳验证集准确率 / 测试集准确率
+
+• Macro-F1（建议加上，显得更专业）
+
+• 每个设置的 trainable parameters 数量
+
+• 每个 epoch 的平均训练时间（或总训练时间）
+
+• 4–6 张测试样本预测图（最好有对有错）
+
+
+
+4. 软件与硬件需求
+
+4.1 最低软件环境
+
+• Python 3.10 或 3.11
+
+• PyTorch
+
+• torchvision
+
+• timm（如果你想额外试 ViT）
+
+• scikit-learn（算 Macro-F1、confusion matrix）
+
+• pandas / numpy / matplotlib / tqdm / Pillow
+
+
+4.2 硬件建议
+
+• 最低可跑：CPU
+
+• 推荐：单张消费级 GPU（如 6GB–12GB 显存）
+
+• 作业够用配置：ResNet-18 + 小数据集 + 10–20 epoch
+
+   经验判断：
+
+• 没有 GPU：做 ResNet-18 就够，不要贪大。
+
+
+
+                                            3
+• 有 GPU：可以把 ResNet-18 作为主实验，再做一个可选扩展（如 ViT-B/16 feature extraction 或
+   VPT）。
+
+
+
+5. 你必须保存的表格和图片
+
+5.1 论文里最应该插入的 2 张图 / 2 个表
+
+   表 1：主结果表（必须）
+
+Method                      Val Acc       Test Acc   Macro-F1      Trainable Params /
+                                                                   Time
+
+Scratch                       [填]           [填]           [填]      [填]
+Feature Extraction            [填]           [填]           [填]      [填]
+Partial Fine-tuning           [填]           [填]           [填]      [填]
+Full Fine-tuning              [填]           [填]           [填]      [填]
+
+
+   图 1：训练曲线（建议）
+
+• 训练/验证准确率曲线，至少比较 2–4 个设置
+
+• 或者画验证集 loss 曲线
+
+   图 2：样本预测图（建议）
+
+• 每张图写上：True Label、Predicted Label、Confidence
+
+• 一定要包含几个错误样本，方便你写误差分析
+
+   表 2：解释性分析表（加分）
+
+Setting               Observed behavior               Interpretation
+
+Feature Extraction    [填]                             说明冻结特征为何收敛快、为何上限可能
+                                                      有限
+Partial Fine-tuning   [填]                             说明解冻高层语义特征为何更适合目标
+                                                      任务
+Full Fine-tuning      [填]                             说明性能是否更高，以及是否出现过拟合
+Scratch               [填]                             说明小数据条件下为什么从头训练不占
+                                                      优
+
+
+
+6. 主论文里哪些地方要替换
+
+   主论文已经预留了实验占位框。你在最终提交前，需要把占位框里的文字换成以下内容：
+
+
+6.1 替换内容 1：结果表
+
+   把上面的“表 1：主结果表”插入到主论文实验占位区。
+
+
+
+                                              4
+6.2 替换内容 2：预测样本图
+
+    插入 1 张预测可视化图（4–6 张样本拼图即可）。
+
+
+6.3 替换内容 3：英文分析段（可直接改后粘贴）
+
+    下面这段你可以直接放进主论文，再把中括号改成你的实际结果：
+Draft paragraph for insertion: To validate the theoretical discussion, I compared four training regimes
+on a small target dataset: training from scratch, feature extraction, partial fine-tuning, and full fine-tuning
+using an ImageNet-pretrained ResNet-18 backbone. The best test accuracy was achieved by [method] with
+[xx.x%], while feature extraction reached [xx.x%] with substantially lower computational cost. Compared
+with training from scratch, pre-training improved both convergence speed and final generalization, supporting
+the claim that transferred representations are especially useful in low-data settings. Partial fine-tuning offered
+the best trade-off between flexibility and stability in my setup, suggesting that adapting high-level semantic
+layers is often suﬀicient when the target task is related to the source domain.
+
+
+6.4 替换内容 4：误差分析句子
+
+    你还应该在正文补 2–3 句：
+
+• 哪些类别最容易混淆；
+
+• 为什么会混淆（背景、姿态、分辨率、类间相似度）；
+
+• 迁移学习是否改善了这种混淆。
+
+
+
+7. 高分写法：你不要只报数字，要解释数字
+
+    老师通常不会只看你“有没有跑”，而是看你“会不会分析”。建议你在实验部分这样写：
+
+• 先写现象：哪个方法最好，哪个方法最快。
+
+• 再写原因：为什么预训练能帮助小数据任务。
+
+• 再写限制：如果 full fine-tuning 没有最好，解释是不是数据太少、学习率太大、过拟合、类别差异
+   不够大。
+
+• 最后写结论：在你的实验里，迁移学习是否优于 scratch，哪个 regime 最划算。
+
+    高分分析关键词：
+
+• sample eﬀiciency
+
+• representation reuse
+
+• optimization stability
+
+• overfitting under limited data
+
+• computational eﬀiciency
+
+• transferability of high-level features
+
+                                                         5
+8. 如果你还有时间，可以做的加分扩展
+
+• 扩展 1：加入 ViT-B/16 的 feature extraction 或 full fine-tuning，对比 CNN 和 Transformer。
+
+• 扩展 2：如果你熟悉 prompt tuning / LoRA，可做一个 PEFT 小实验，哪怕只跑 1 个 setting，也
+  能让你的论文更“当前”。
+
+• 扩展 3：报告 trainable parameter ratio（可训练参数占总参数比例），这会让你的实验更像论文。
+
+• 扩展 4：增加 confusion matrix，写清楚哪些类最难。
+
+
+
+9. 迁移学习方法总图（学习用，写论文时也能直接参考）
+
+  你主论文里已经覆盖了“当前主流方法家族”
+                     ，但为了你自己学得更系统，可以把整个领域记成下
+面这张“方法地图”：
+
+• 实例级迁移：重加权、样本选择、过滤不相关源数据。
+
+• 特征级迁移：TCA、CORAL、DANN、MCD 这类 domain adaptation 方法，本质是对齐源域和
+  目标域特征分布。
+
+• 参数级迁移：最主流。先预训练，再 feature extraction / fine-tuning。
+
+• 自监督迁移：SimCLR、MAE、DINOv2 这类先学通用表示再迁移。
+
+• 多模态迁移：CLIP 这类图文对齐模型，支持 zero-shot transfer。
+
+• PEFT：Adapter、Prompt Tuning、Prefix Tuning、BitFit、LoRA、QLoRA、DoRA、VPT。
+
+• 元学习 / few-shot：MAML、ANIL，强调“快速适应新任务”。
+
+• 域泛化 / 测试时适配：训练时见不到目标域，或只在部署时见到目标域时再适应。
+
+• 可信迁移学习：把 fairness、privacy、robustness、calibration 一起考虑。
+
+
+
+10. 最后的执行清单
+
+  在你真正提交前，请按这个顺序检查：
+
+1. 跑完 4 个训练设置；
+
+2. 整理结果表；
+
+3. 保存 1 张训练曲线和 1 张样本预测图；
+
+4. 把主论文占位框替换成你的真实结果；
+
+5. 把姓名、学号补上；
+
+6. 通读一遍英文表述，统一术语：pre-training / feature extraction / fine-tuning / transferability；
+
+7. 最后导出 PDF 再交。
+
+
+                                        6
+一句话建议：如果你时间有限，就把 ResNet-18 + 小数据集 + 4 个 regime 比较做扎实。这个
+方案最稳、最好写、最容易形成“理论 + 实验 + 分析”闭环，已经足以支撑一篇高质量课程论文。
+
+
+
+
+                           7
+

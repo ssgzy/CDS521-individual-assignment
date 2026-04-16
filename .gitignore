@@ -2,6 +2,5 @@ __pycache__/
 *.pyc
 .venv/
 logs/
-outputs/
 .obsidian/workspace.json
 data/cifar-10-python.tar.gz
